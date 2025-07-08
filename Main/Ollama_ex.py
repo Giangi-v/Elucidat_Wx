@@ -67,19 +67,19 @@ model_name = 'smollm:latest' #'wizardlm2' #'tinyllama' # string to identify the 
 models = get_model_list()
 print(models)
 
-
-'''
-simulated conversation where the user gives an initial question
-to one LLM and then allows two LLMs to converse in a loop
- '''
+def test_conv():
+    '''
+    simulated conversation where the user gives an initial question
+    to one LLM and then allows two LLMs to converse in a loop
+    '''
  
-print("User: \nHi, how are you?")
-input_string = 'Hi, how are you?'
-response = call_and_respond(model_name, input_string)
-
-for i in range(3):
-    print("tinyllama: ")
-    response = call_and_respond('tinyllama:latest', response)
-    print("smollm: ")
-    response = call_and_respond('smollm:latest', response)
+    print("User: \nHi, how are you?")
+    input_string = 'Hi, how are you?'
+    response = call_and_respond(model_name, input_string)
+ 
+    for i in range(3):
+        print("tinyllama: ")
+        response = call_and_respond('tinyllama:latest', response)        
+        print("smollm: ")
+        response = call_and_respond('smollm:latest', response)
     
