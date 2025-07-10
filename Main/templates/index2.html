@@ -5,21 +5,38 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="{{ url_for('static', filename= 'css/style.css') }}">
     <title>Model List</title>
+    <h4>LLM Chat</h4>
+    <p class="header-center">--Powered by Ollama--</p>
 
 </head>
 
 <body>
-<h1>LLM: </h1>
 
-<!--Dropdown menu-->
-<div class="container_dropbtn">
+
+<!--Dropdown menu
+
+<div class="main-flex">
+  <div class="container_dropbtn">
   <div class="dropdown">
-    <button onclick="DropDownFnc()" class="dropbtn">Language Model Selection</button>
-    <div id="ModelsDropDown" class="dropdown-content">
-    <a href="#">{{  models  }}</a>
+    <button onclick="DropDownFnc()" class="dropbtn" type="button">Language Model Selection</button>
+      <div id="ModelsDropDown" class="dropdown-content">
+        {% for model in models %}
+          <a href="#">{{ model }}</a><br>
+      {% endfor %}
     </div>
   </div>
-</div>
+  </div>
+-->
+
+<div class="main-flex">
+  <div class="container_dropbtn">
+  <label for="model-select" style="color: var(--color-light-sage); font-weight: bold;">Language Model Selection</label>
+  <select id="model-select" name="model" class="model-select">
+    {% for model in models %}
+      <option value="{{ model }}">{{ model }}</option>
+    {% endfor %}
+  </select>
+  </div>
 
 
 <!--Text input form -->
@@ -36,8 +53,9 @@
             </div>
         {% endif %}
     <p id="out2"><strong></strong> {{  output_text  }}</p>
-  </div>
+</div>
 
+</div>
 
 <script>
 document.querySelector('form[action="/submit"]').addEventListener('submit', function(e) {
@@ -51,6 +69,13 @@ document.querySelector('form[action="/submit"]').addEventListener('submit', func
     // Update the output element with user input and prep for
     out2.innerHTML += `<strong>\n\nUser input: </strong> ${userInput}<strong>\n\nLLM reply: </strong> `;
 
+    //Model select script
+    var model;
+    // Add event listener to update model when selection changes
+    var selected_model = document.getElementById("model-select");
+    model = selected_model.value; 
+    
+
     // Close any previous EventSource
     if (window.currentEventSource) {
         window.currentEventSource.close();
@@ -59,7 +84,7 @@ document.querySelector('form[action="/submit"]').addEventListener('submit', func
     // Send the form data via fetch to get the stream
     fetch('/submit', {
         method: 'POST',
-        body: new URLSearchParams({user_input: userInput, previous_output: previousOutput}),
+        body: new URLSearchParams({user_input: userInput, previous_output: previousOutput, LLM_selection: model}),
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -101,16 +126,6 @@ document.querySelector('form[action="/submit"]').addEventListener('submit', func
 
 
 <script>
-//Dropdown script
-
-
-/*
-for (i in models) {
-for (i=0; i<models.length; i++) {
-   document.writeln(models[i])
-  }
-}
-*/ 
 
 
 function DropDownFnc(event) {

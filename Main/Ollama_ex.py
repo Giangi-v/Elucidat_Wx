@@ -55,7 +55,7 @@ def call_and_respond(modelName, input_string):
         ])
     #print(response['message']['content'])
     # or access fields directly from the response object
-    print(response.message.content)
+    #print(response.message.content)
     return response.message.content
     
     

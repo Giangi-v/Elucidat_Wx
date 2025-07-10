@@ -14,6 +14,8 @@ import asyncio
 import Ollama_ex
 from collections import deque
 
+LLM_selection = "tinyllama:latest"  # Default model selection
+
 # LLM memory management
 # Stack to store last 5 user inputs
 user_input_stack = deque(maxlen=5)
@@ -73,10 +75,11 @@ def submit_text():
         user_input_text = request.form.get('user_input', '')  # Get user input text
         previous_output_text = request.form.get('previous_output', '')  # Get previous output if available
         previous_output_text = previous_output_text[11:] if previous_output_text.startswith("LLM reply: ") else previous_output_text
-            
+        LLM_selection = request.form.get('LLM_selection', 'tinyllama:latest')  # Get selected model, default to 'tinyllama:latest'
 
         print(f"User input: {user_input_text}")
         print(f"Previous output: {previous_output_text}")
+        print(f"\nSelected model: {LLM_selection}")
 
         if not user_input_text:
             return "No user input provided", 400
@@ -95,7 +98,7 @@ def submit_text():
             yield "data: {}\n\n"
 
         # Return a Flask Response object with the generator and appropriate mimetype for SSE
-        return Response(generate_ollama_stream("tinyllama:latest", user_input_text, previous_output_text), mimetype='text/event-stream')
+        return Response(generate_ollama_stream(LLM_selection, user_input_text, previous_output_text), mimetype='text/event-stream')
 
     # If for some reason a GET request hits this route, redirect or show an error
     return "Method Not Allowed", 405
