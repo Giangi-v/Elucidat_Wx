@@ -9,43 +9,96 @@
 </head>
 
 <body>
-<h1>List of models: </h1>
-<div class="dropdown">
-  <button onclick="DropDownFnc()" class="dropbtn">Model Select</button>
-  <div id="ModelsDropDown" class="dropdown-content">
-  <a href="#">{{  models  }}</a>
+<h1>LLM: </h1>
+
+<!--Dropdown menu-->
+<div class="container_dropbtn">
+  <div class="dropdown">
+    <button onclick="DropDownFnc()" class="dropbtn">Language Model Selection</button>
+    <div id="ModelsDropDown" class="dropdown-content">
+    <a href="#">{{  models  }}</a>
+    </div>
   </div>
 </div>
 
 
-<div class='container'>
-  <form>
-    <a href=# id=test><button class='btn btn-default'>Test</button></a>
-  </form>
-</div>
+<!--Text input form -->
+<div class="container">
+        <h1>Submit Your LLM Input</h1>
+        <form method="POST" action="/submit">
+            <textarea id="user_input" name="user_input" placeholder="Enter text here..." required></textarea>
+            <button type="submit">Submit Text</button>
+        </form>
 
-<p id="out">{{  text  }}</p>
+        {% if output_text %}
+            <div class="message">
+                <p><strong>You submitted:</strong>{{ user_input_text }}</p>
+            </div>
+        {% endif %}
+    <p id="out2"><strong></strong> {{  output_text  }}</p>
+  </div>
 
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 
-<script type=text/javascript>
-//Call the 'call_and_response' function in Ollama
-        $(function() {
-          $('a#test').on('click', function(e) {
-            e.preventDefault()
-            console.log("printed!")
-            $.getJSON('/button_func', function(data) {
-              
-            
-	    if (data && data.text) {
-	        document.getElementById("out").innerText = data.text;
-	    } else {
-	        document.getElementById("out").innerText = "Words";
-            }
-	    });
-          });
-	});
+<script>
+document.querySelector('form[action="/submit"]').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // Get input from text area
+    const userInput = document.getElementById('user_input').value;
+    // Get the output element
+    const out2 = document.getElementById('out2');
+    // Extract previous output text to variable
+    const previousOutput = out2.textContent;
+    // Update the output element with user input and prep for
+    out2.innerHTML += `<strong>\n\nUser input: </strong> ${userInput}<strong>\n\nLLM reply: </strong> `;
+
+    // Close any previous EventSource
+    if (window.currentEventSource) {
+        window.currentEventSource.close();
+    }
+
+    // Send the form data via fetch to get the stream
+    fetch('/submit', {
+        method: 'POST',
+        body: new URLSearchParams({user_input: userInput, previous_output: previousOutput}),
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    }).then(response => {
+        if (!response.ok) {
+            out2.innerHTML += "Error: " + response.statusText;
+            return;
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        function read() {
+            reader.read().then(({done, value}) => {
+                if (done) return;
+                buffer += decoder.decode(value, {stream: true});
+                // Split by double newlines (SSE event separator)
+                let parts = buffer.split('\n\n');
+                buffer = parts.pop(); // Save incomplete part
+                for (let part of parts) {
+                    if (part.startsWith('data: ')) {
+                        let data = part.slice(6);
+                        if (data && data !== '{}') {
+                            try {
+                                let obj = JSON.parse(data);
+                                if (obj.chunk) {
+                                    out2.innerHTML += obj.chunk;
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+                read();
+            });
+        }
+        read();
+    });
+});
 </script>
+
 
 <script>
 //Dropdown script
