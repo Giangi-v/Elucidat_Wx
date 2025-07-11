@@ -12,7 +12,7 @@ from ollama import chat
 from ollama import ChatResponse
 from ollama import pull
 from ollama import list as ollama_list
-
+import ctypes
 import sqlite3
 
 
@@ -43,7 +43,7 @@ def get_model_list():
   
       
 def model_pull(model_name): #pull model to device
-    pull(model_name)    
+    pull(model_name)   
 
 
 def call_and_respond(modelName, input_string):
@@ -57,8 +57,6 @@ def call_and_respond(modelName, input_string):
     # or access fields directly from the response object
     #print(response.message.content)
     return response.message.content
-    
-    
 
 
 #define model

@@ -30,12 +30,17 @@
 
 <div class="main-flex">
   <div class="container_dropbtn">
-  <label for="model-select" style="color: var(--color-light-sage); font-weight: bold;">Language Model Selection</label>
-  <select id="model-select" name="model" class="model-select">
-    {% for model in models %}
-      <option value="{{ model }}">{{ model }}</option>
-    {% endfor %}
-  </select>
+    <form method="POST" action="/model_get">
+        <label for="model-select" style="color: var(--color-light-sage); font-weight: bold;">Language Model Selection</label>
+            <select id="model-select" name="model" class="model-select">
+                {% for model in models %}
+                <option value="{{ model }}">{{ model }}</option>
+                {% endfor %}
+        </select>
+    </form>
+    <textarea id='model_para' placeholder="Selected model: " + {{ model }}></textarea>
+    <button id="open_models_lib" type="submit" onclick="window.open('https://ollama.com/library', '_blank');">Open Models Library</button>
+    <button id="pull_model" type="submit">Pull</button>
   </div>
 
 
@@ -58,6 +63,7 @@
 </div>
 
 <script>
+    //text input listener for LLM input
 document.querySelector('form[action="/submit"]').addEventListener('submit', function(e) {
     e.preventDefault();
     // Get input from text area
@@ -74,6 +80,7 @@ document.querySelector('form[action="/submit"]').addEventListener('submit', func
     // Add event listener to update model when selection changes
     var selected_model = document.getElementById("model-select");
     model = selected_model.value; 
+
     
 
     // Close any previous EventSource
@@ -125,7 +132,50 @@ document.querySelector('form[action="/submit"]').addEventListener('submit', func
 </script>
 
 
+
 <script>
+
+document.getElementById('model-select').addEventListener('change', function() {
+    var model = this.value;
+    if (model === "Add new?") {
+        document.getElementById('model_para').textContent = "Enter model name here and click 'Pull'";
+    }
+    else {
+        document.getElementById('model_para').textContent = "Selected model: " + model;
+    }
+});
+
+document.getElementById('pull_model').addEventListener('click', function() {
+    var model = document.getElementById('model_para').value;
+    console.log(model)
+    fetch('/model_pull', {
+        method: 'POST',
+        body: new URLSearchParams({model_name: model}),
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    }).then(response => {
+        if (response.ok) {
+            response.json().then(data => {
+                // data.models should be the updated list
+                const select = document.getElementById('model-select');
+                // Remove all existing options
+                select.innerHTML = '';
+                // Add new options
+                data.models.forEach(function(model) {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    select.appendChild(option);
+                });
+                alert("Model pulled successfully!");
+            }); 
+        }
+        else {
+            alert("Failed to pull model.");
+        }
+    });
+});
 
 
 function DropDownFnc(event) {

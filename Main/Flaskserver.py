@@ -54,7 +54,9 @@ def LLM_memory(user_input_text, LLM_output_text):
 app = Flask(__name__)
 
 #get models from Ollama for drop-down
-model_list = Ollama_ex.get_model_list() 
+model_list = Ollama_ex.get_model_list()
+model_list.append("Add new?") 
+print(model_list)
 
 #load page
 @app.route('/')
@@ -102,6 +104,32 @@ def submit_text():
 
     # If for some reason a GET request hits this route, redirect or show an error
     return "Method Not Allowed", 405
+
+@app.route('/model_pull', methods=['POST'])
+def model_pull():
+    if request.method == 'POST':
+        # Get the model name from the form
+        model_name = request.form.get('model_name', '').strip()
+        if model_name:
+            print("Attempting to pull model...")
+            try:
+                print(f"Pulling model: {model_name}")
+                Ollama_ex.model_pull(model_name)  # Pull the specified model
+                # Update the model list
+                model_list = Ollama_ex.get_model_list()
+                model_list.append("Add new?") 
+                print(model_list)
+                #return the updated model list to the client
+                return jsonify({"message": f"Model '{model_name}' pulled successfully.", "models": model_list})
+            except Exception as e:
+                print("Failed:", str(e))
+                return jsonify({"error": str(e)}), 500
+        else:
+            print("Model name cannot be empty.")
+            return jsonify({"error": "Model name cannot be empty."}), 400
+        
+
+    
 
 
 if __name__ == "__main__":
