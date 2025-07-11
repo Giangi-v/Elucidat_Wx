@@ -12,7 +12,7 @@ from ollama import chat
 from ollama import ChatResponse
 from ollama import pull
 from ollama import list as ollama_list
-
+import ctypes
 import sqlite3
 
 
@@ -43,7 +43,7 @@ def get_model_list():
   
       
 def model_pull(model_name): #pull model to device
-    pull(model_name)    
+    pull(model_name)   
 
 
 def call_and_respond(modelName, input_string):
@@ -55,10 +55,8 @@ def call_and_respond(modelName, input_string):
         ])
     #print(response['message']['content'])
     # or access fields directly from the response object
-    print(response.message.content)
+    #print(response.message.content)
     return response.message.content
-    
-    
 
 
 #define model
@@ -67,19 +65,19 @@ model_name = 'smollm:latest' #'wizardlm2' #'tinyllama' # string to identify the 
 models = get_model_list()
 print(models)
 
-
-'''
-simulated conversation where the user gives an initial question
-to one LLM and then allows two LLMs to converse in a loop
- '''
+def test_conv():
+    '''
+    simulated conversation where the user gives an initial question
+    to one LLM and then allows two LLMs to converse in a loop
+    '''
  
-print("User: \nHi, how are you?")
-input_string = 'Hi, how are you?'
-response = call_and_respond(model_name, input_string)
-
-for i in range(3):
-    print("tinyllama: ")
-    response = call_and_respond('tinyllama:latest', response)
-    print("smollm: ")
-    response = call_and_respond('smollm:latest', response)
+    print("User: \nHi, how are you?")
+    input_string = 'Hi, how are you?'
+    response = call_and_respond(model_name, input_string)
+ 
+    for i in range(3):
+        print("tinyllama: ")
+        response = call_and_respond('tinyllama:latest', response)        
+        print("smollm: ")
+        response = call_and_respond('smollm:latest', response)
     

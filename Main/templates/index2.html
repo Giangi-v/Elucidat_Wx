@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename= 'css/style.css') }}">
+    <title>Model List</title>
+    <h4>LLM Chat</h4>
+    <p class="header-center">--Powered by Ollama--</p>
+
+</head>
+
+<body>
+
+
+<!--Dropdown menu
+
+<div class="main-flex">
+  <div class="container_dropbtn">
+  <div class="dropdown">
+    <button onclick="DropDownFnc()" class="dropbtn" type="button">Language Model Selection</button>
+      <div id="ModelsDropDown" class="dropdown-content">
+        {% for model in models %}
+          <a href="#">{{ model }}</a><br>
+      {% endfor %}
+    </div>
+  </div>
+  </div>
+-->
+
+<div class="main-flex">
+  <div class="container_dropbtn">
+    <form method="POST" action="/model_get">
+        <label for="model-select" style="color: var(--color-light-sage); font-weight: bold;">Language Model Selection</label>
+            <select id="model-select" name="model" class="model-select">
+                {% for model in models %}
+                <option value="{{ model }}">{{ model }}</option>
+                {% endfor %}
+        </select>
+    </form>
+    <textarea id='model_para' placeholder="Selected model: " + {{ model }}></textarea>
+    <button id="open_models_lib" type="submit" onclick="window.open('https://ollama.com/library', '_blank');">Open Models Library</button>
+    <button id="pull_model" type="submit">Pull</button>
+  </div>
+
+
+<!--Text input form -->
+<div class="container">
+        <h1>Submit Your LLM Input</h1>
+        <form method="POST" action="/submit">
+            <textarea id="user_input" name="user_input" placeholder="Enter text here..." required></textarea>
+            <button type="submit">Submit Text</button>
+        </form>
+
+        {% if output_text %}
+            <div class="message">
+                <p><strong>You submitted:</strong>{{ user_input_text }}</p>
+            </div>
+        {% endif %}
+    <p id="out2"><strong></strong> {{  output_text  }}</p>
+</div>
+
+</div>
+
+<script>
+    //text input listener for LLM input
+document.querySelector('form[action="/submit"]').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // Get input from text area
+    const userInput = document.getElementById('user_input').value;
+    // Get the output element
+    const out2 = document.getElementById('out2');
+    // Extract previous output text to variable
+    const previousOutput = out2.textContent;
+    // Update the output element with user input and prep for
+    out2.innerHTML += `<strong>\n\nUser input: </strong> ${userInput}<strong>\n\nLLM reply: </strong> `;
+
+    //Model select script
+    var model;
+    // Add event listener to update model when selection changes
+    var selected_model = document.getElementById("model-select");
+    model = selected_model.value; 
+
+    
+
+    // Close any previous EventSource
+    if (window.currentEventSource) {
+        window.currentEventSource.close();
+    }
+
+    // Send the form data via fetch to get the stream
+    fetch('/submit', {
+        method: 'POST',
+        body: new URLSearchParams({user_input: userInput, previous_output: previousOutput, LLM_selection: model}),
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    }).then(response => {
+        if (!response.ok) {
+            out2.innerHTML += "Error: " + response.statusText;
+            return;
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        function read() {
+            reader.read().then(({done, value}) => {
+                if (done) return;
+                buffer += decoder.decode(value, {stream: true});
+                // Split by double newlines (SSE event separator)
+                let parts = buffer.split('\n\n');
+                buffer = parts.pop(); // Save incomplete part
+                for (let part of parts) {
+                    if (part.startsWith('data: ')) {
+                        let data = part.slice(6);
+                        if (data && data !== '{}') {
+                            try {
+                                let obj = JSON.parse(data);
+                                if (obj.chunk) {
+                                    out2.innerHTML += obj.chunk;
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+                read();
+            });
+        }
+        read();
+    });
+});
+</script>
+
+
+
+<script>
+
+document.getElementById('model-select').addEventListener('change', function() {
+    var model = this.value;
+    if (model === "Add new?") {
+        document.getElementById('model_para').textContent = "Enter model name here and click 'Pull'";
+    }
+    else {
+        document.getElementById('model_para').textContent = "Selected model: " + model;
+    }
+});
+
+document.getElementById('pull_model').addEventListener('click', function() {
+    var model = document.getElementById('model_para').value;
+    console.log(model)
+    fetch('/model_pull', {
+        method: 'POST',
+        body: new URLSearchParams({model_name: model}),
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    }).then(response => {
+        if (response.ok) {
+            response.json().then(data => {
+                // data.models should be the updated list
+                const select = document.getElementById('model-select');
+                // Remove all existing options
+                select.innerHTML = '';
+                // Add new options
+                data.models.forEach(function(model) {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    select.appendChild(option);
+                });
+                alert("Model pulled successfully!");
+            }); 
+        }
+        else {
+            alert("Failed to pull model.");
+        }
+    });
+});
+
+
+function DropDownFnc(event) {
+  document.getElementById("ModelsDropDown").classList.toggle("show");
+}
+</script>
+
+</body>
+</html>
